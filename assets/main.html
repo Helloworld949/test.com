@@ -1,11 +1,554 @@
-<html>
+<!DOCTYPE html>
+<html lang="pt-br">
 <head>
-    <meta name="color-scheme" content="dark light">  
-    <link rel="stylesheet" type="text/css" href="file:///assets/main.css">
-    <script src="file:///assets/android.js"></script>
-    <script src="file:///assets/main.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Lavanderia Inteligente</title>
+    <!-- Ícone de Font Awesome para botões e status (opcional, mas recomendado para ícones) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <style>
+        /* CSS Integrado */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #e0f7fa; /* Um azul mais suave */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #333;
+            padding: 20px; /* Adiciona um pouco de padding para telas menores */
+            box-sizing: border-box;
+        }
+
+        .container {
+            background-color: #ffffff;
+            border-radius: 25px; /* Bordas mais arredondadas */
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15); /* Sombra mais pronunciada */
+            width: 95%; /* Ocupa mais largura em mobile */
+            max-width: 480px; /* Aumenta um pouco o max-width */
+            padding: 35px;
+            text-align: center;
+            box-sizing: border-box;
+            border: 1px solid #cfd8dc; /* Borda sutil */
+        }
+
+        header {
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 25px;
+            font-size: 2em; /* Tamanho maior para o título principal */
+            font-weight: 700;
+        }
+
+        h2 {
+            color: #34495e;
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 1.6em; /* Tamanho maior para os subtítulos */
+            border-bottom: 2px solid #eceff1; /* Linha divisória */
+            padding-bottom: 10px;
+        }
+
+        .device-selector {
+            display: flex;
+            justify-content: space-around;
+            gap: 10px; /* Espaço entre os botões */
+            margin-bottom: 35px;
+        }
+
+        .device-selector button {
+            background-color: #eceff1;
+            color: #607d8b;
+            border: none;
+            padding: 15px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .device-selector button i {
+            margin-right: 8px;
+            font-size: 1.2em;
+        }
+
+        .device-selector button.active {
+            background-color: #00bcd4; /* Azul ciano vibrante */
+            color: white;
+            box-shadow: 0 6px 20px rgba(0, 188, 212, 0.4);
+            transform: translateY(-3px); /* Efeito de elevação */
+        }
+
+        .device-selector button:hover:not(.active) {
+            background-color: #cfd8dc;
+            color: #455a64;
+        }
+
+        .control-panel {
+            background-color: #fcfcfc;
+            border-radius: 18px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.08); /* Sombra interna para profundidade */
+            display: none; /* Hidden by default */
+            border: 1px solid #e0f2f7;
+        }
+
+        .control-panel.active {
+            display: block; /* Shown when active */
+        }
+
+        .setting-group {
+            margin-bottom: 22px;
+            text-align: left;
+            position: relative; /* Para o ícone de seta do select */
+        }
+
+        .setting-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #455a64;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+        }
+
+        .setting-group label i {
+            margin-right: 10px;
+            color: #00bcd4;
+            font-size: 1.1em;
+        }
+
+        .setting-group select,
+        .setting-group input[type="number"] {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #b0bec5;
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-size: 1.1em;
+            background-color: #eff5f7; /* Fundo mais claro para inputs */
+            color: #333;
+            -webkit-appearance: none; /* Remove default arrow on select */
+            -moz-appearance: none;
+            appearance: none;
+            cursor: pointer;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .setting-group select:focus,
+        .setting-group input[type="number"]:focus {
+            outline: none;
+            border-color: #00bcd4;
+            box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.2);
+        }
+
+        /* Estilização da seta personalizada para selects */
+        .setting-group select {
+            background-image: url('data:image/svg+xml;utf8,<svg fill="#455a64" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            background-size: 22px;
+            padding-right: 40px; /* Para não sobrepor a seta */
+        }
+
+        .range-with-value {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background-color: #eff5f7;
+            border: 1px solid #b0bec5;
+            border-radius: 10px;
+            padding: 10px 15px;
+        }
+
+        .setting-group input[type="range"] {
+            flex-grow: 1;
+            -webkit-appearance: none;
+            height: 8px; /* Altura da barra */
+            border-radius: 4px;
+            background: #b0bec5; /* Cor da trilha do slider */
+            outline: none;
+            margin: 0;
+            transition: background 0.3s ease;
+        }
+
+        .setting-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 28px; /* Tamanho do "pegador" */
+            height: 28px;
+            border-radius: 50%;
+            background: #00bcd4; /* Cor do "pegador" */
+            cursor: grab;
+            box-shadow: 0 2px 8px rgba(0, 188, 212, 0.4);
+            margin-top: -10px; /* Ajuste vertical */
+            border: 2px solid white;
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .setting-group input[type="range"]::-webkit-slider-thumb:active {
+            cursor: grabbing;
+        }
+
+        .setting-group input[type="range"]::-moz-range-thumb {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #00bcd4;
+            cursor: grab;
+            box-shadow: 0 2px 8px rgba(0, 188, 212, 0.4);
+            border: 2px solid white;
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+        }
+         .setting-group input[type="range"]::-moz-range-thumb:active {
+            cursor: grabbing;
+        }
+
+        #spinSpeedValue {
+            display: inline-block;
+            min-width: 60px; /* Garante que o texto não "pule" */
+            text-align: center;
+            font-weight: 700;
+            color: #00bcd4;
+            background-color: #e0f2f7;
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 0.95em;
+        }
+
+        .start-button {
+            background-color: #4caf50; /* Verde mais amigável */
+            color: white;
+            border: none;
+            padding: 18px 35px;
+            border-radius: 12px;
+            font-size: 1.3em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            width: 100%;
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+            margin-top: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .start-button i {
+            font-size: 1.4em;
+        }
+
+        .start-button:hover {
+            background-color: #43a047;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(76, 175, 80, 0.5);
+        }
+
+        .start-button:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 10px rgba(76, 175, 80, 0.3);
+        }
+
+        .status-display {
+            margin-top: 25px;
+            padding: 15px;
+            background-color: #e3f2fd; /* Azul claro para o status */
+            border-radius: 10px;
+            border: 1px solid #bbdefb;
+            color: #2196f3;
+            font-size: 1.1em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .status-display .status-icon {
+            font-size: 1.3em;
+            color: #1976d2;
+        }
+
+        .status-display .loading-spinner {
+            color: #00bcd4;
+        }
+
+        .status-display .status-text {
+            color: #2196f3;
+        }
+
+        /* Responsividade para telas menores (smartphones) */
+        @media (max-width: 600px) {
+            .container {
+                padding: 25px 20px;
+                border-radius: 20px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            h2 {
+                font-size: 1.4em;
+            }
+
+            .device-selector button {
+                padding: 12px 15px;
+                font-size: 1em;
+            }
+
+            .device-selector button i {
+                margin-right: 5px;
+                font-size: 1em;
+            }
+
+            .setting-group label {
+                font-size: 1em;
+            }
+
+            .setting-group select,
+            .setting-group input[type="number"],
+            .range-with-value {
+                padding: 10px 12px;
+                font-size: 1em;
+            }
+
+            .setting-group input[type="range"]::-webkit-slider-thumb,
+            .setting-group input[type="range"]::-moz-range-thumb {
+                width: 24px;
+                height: 24px;
+                margin-top: -8px;
+            }
+
+            #spinSpeedValue {
+                min-width: 50px;
+                padding: 3px 8px;
+                font-size: 0.9em;
+            }
+
+            .start-button {
+                padding: 15px 25px;
+                font-size: 1.1em;
+            }
+
+            .start-button i {
+                font-size: 1.2em;
+            }
+
+            .status-display {
+                padding: 12px;
+                font-size: 1em;
+            }
+
+            .status-display .status-icon {
+                font-size: 1.1em;
+            }
+        }
+    </style>
 </head>
-<body onload="pageLoaded()">
-<div class="centerInScreen"><h1>Hello</h1></div>
-</body>
-</html>
+<body>
+    <div class="container">
+        <header>
+            <h1>Controle de Lavanderia</h1>
+            <div class="device-selector">
+                <button id="washerBtn" class="active">
+                    <i class="fas fa-washer"></i> Máquina de Lavar
+                </button>
+                <button id="dryerBtn">
+                    <i class="fas fa-tshirt"></i> Secadora
+                </button>
+            </div>
+        </header>
+
+        <!-- Painel da Máquina de Lavar -->
+        <div id="washerControl" class="control-panel active">
+            <h2>Máquina de Lavar</h2>
+
+            <div class="setting-group">
+                <label for="washCycle"><i class="fas fa-sync-alt"></i> Ciclo de Lavagem:</label>
+                <select id="washCycle">
+                    <option value="normal">Normal</option>
+                    <option value="delicate">Delicado</option>
+                    <option value="heavy">Pesado</option>
+                    <option value="quick">Rápido</option>
+                    <option value="whites">Brancos</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                <label for="washTemp"><i class="fas fa-thermometer-half"></i> Temperatura da Água:</label>
+                <select id="washTemp">
+                    <option value="cold">Fria</option>
+                    <option value="warm">Morna</option>
+                    <option value="hot">Quente</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                <label for="spinSpeed"><i class="fas fa-fan"></i> Velocidade de Centrifugação:</label>
+                <div class="range-with-value">
+                    <input type="range" id="spinSpeed" min="0" max="3" value="1" step="1">
+                    <span id="spinSpeedValue">Médio</span>
+                </div>
+            </div>
+
+            <button class="start-button" onclick="startWash()">
+                <i class="fas fa-play"></i> Iniciar Lavagem
+            </button>
+            <div class="status-display" id="washStatus">
+                <i class="fas fa-info-circle status-icon"></i>
+                <span class="status-text">Pronto para iniciar.</span>
+            </div>
+        </div>
+
+        <!-- Painel da Secadora -->
+        <div id="dryerControl" class="control-panel">
+            <h2>Secadora</h2>
+
+            <div class="setting-group">
+                <label for="dryCycle"><i class="fas fa-wind"></i> Ciclo de Secagem:</label>
+                <select id="dryCycle">
+                    <option value="auto">Automático</option>
+                    <option value="delicate">Delicado</option>
+                    <option value="timed">Por Tempo</option>
+                    <option value="airFluff">Ar Frio</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                <label for="dryTemp"><i class="fas fa-temperature-low"></i> Temperatura de Secagem:</label>
+                <select id="dryTemp">
+                    <option value="low">Baixa</option>
+                    <option value="medium">Média</option>
+                    <option value="high">Alta</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                <label for="dryTime"><i class="fas fa-clock"></i> Tempo de Secagem (min):</label>
+                <input type="number" id="dryTime" min="10" max="240" value="60">
+            </div>
+
+            <button class="start-button" onclick="startDry()">
+                <i class="fas fa-play"></i> Iniciar Secagem
+            </button>
+            <div class="status-display" id="dryStatus">
+                <i class="fas fa-info-circle status-icon"></i>
+                <span class="status-text">Pronto para iniciar.</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // JavaScript Integrado
+        document.addEventListener('DOMContentLoaded', () => {
+            const washerBtn = document.getElementById('washerBtn');
+            const dryerBtn = document.getElementById('dryerBtn');
+            const washerControl = document.getElementById('washerControl');
+            const dryerControl = document.getElementById('dryerControl');
+            const spinSpeedInput = document.getElementById('spinSpeed');
+            const spinSpeedValue = document.getElementById('spinSpeedValue');
+
+            const spinSpeedLabels = ["Desligado", "Baixo", "Médio", "Alto"];
+
+            // Inicializa o valor do range
+            spinSpeedValue.textContent = spinSpeedLabels[spinSpeedInput.value];
+
+            // Atualiza o valor do range ao mover o slider
+            spinSpeedInput.addEventListener('input', () => {
+                spinSpeedValue.textContent = spinSpeedLabels[spinSpeedInput.value];
+            });
+
+            // Trocar para o painel da máquina de lavar
+            washerBtn.addEventListener('click', () => {
+                washerBtn.classList.add('active');
+                dryerBtn.classList.remove('active');
+                washerControl.classList.add('active');
+                dryerControl.classList.remove('active');
+            });
+
+            // Trocar para o painel da secadora
+            dryerBtn.addEventListener('click', () => {
+                dryerBtn.classList.add('active');
+                washerBtn.classList.remove('active');
+                dryerControl.classList.add('active');
+                washerControl.classList.remove('active');
+            });
+        });
+
+        function showStatus(elementId, message, isError = false) {
+            const statusDisplay = document.getElementById(elementId);
+            const statusText = statusDisplay.querySelector('.status-text');
+            const statusIcon = statusDisplay.querySelector('.status-icon');
+
+            statusText.textContent = message;
+
+            // Remove classes de estado anteriores
+            statusDisplay.classList.remove('status-success', 'status-error', 'status-info');
+            statusIcon.classList.remove('fa-info-circle', 'fa-check-circle', 'fa-times-circle', 'fa-circle-notch', 'fa-spin');
+            statusIcon.style.display = 'inline-block'; // Garante que o ícone esteja visível
+
+            if (isError) {
+                statusDisplay.classList.add('status-error');
+                statusIcon.classList.add('fa-times-circle');
+            } else if (message.includes('iniciado') || message.includes('concluído')) {
+                statusDisplay.classList.add('status-success');
+                statusIcon.classList.add('fa-check-circle');
+            } else {
+                statusDisplay.classList.add('status-info');
+                statusIcon.classList.add('fa-info-circle');
+            }
+        }
+
+        function startProcess(deviceType, statusElementId) {
+            const statusDisplay = document.getElementById(statusElementId);
+            const statusText = statusDisplay.querySelector('.status-text');
+            const statusIcon = statusDisplay.querySelector('.status-icon');
+
+            // Exibir spinner de carregamento
+            statusText.textContent = `Iniciando ${deviceType}...`;
+            statusDisplay.classList.remove('status-success', 'status-error', 'status-info');
+            statusIcon.classList.remove('fa-info-circle', 'fa-check-circle', 'fa-times-circle');
+            statusIcon.classList.add('fa-circle-notch', 'fa-spin', 'loading-spinner');
+            statusIcon.style.display = 'inline-block';
+
+            // Simular um atraso para a "execução"
+            setTimeout(() => {
+                let cycle, temp, speedOrTime;
+                if (deviceType === 'lavagem') {
+                    cycle = document.getElementById('washCycle').value;
+                    temp = document.getElementById('washTemp').value;
+                    speedOrTime = document.getElementById('spinSpeedValue').textContent;
+                    showStatus(statusElementId,
+                        `Lavagem iniciada! Ciclo: ${cycle}, Temp: ${temp}, Centrifugação: ${speedOrTime}.`, false
+                    );
+                } else { // deviceType === 'secagem'
+                    cycle = document.getElementById('dryCycle').value;
+                    temp = document.getElementById('dryTemp').value;
+                    speedOrTime = document.getElementById('dryTime').value;
+                    showStatus(statusElementId,
+                        `Secagem iniciada! Ciclo: ${cycle}, Temp: ${temp}, Tempo: ${speedOrTime} min.`, false
+                    );
+                }
+                 // Remover spinner após iniciar
+                statusIcon.classList.remove('fa-circle-notch', 'fa-spin', 'loading-spinner');
+                statusIcon.classList.add('fa-check-circle'); // Ícone de sucesso
+                statusDisplay.classList.add('status-success'); // Classe de sucesso
+            }, 2000); // 2 segundos de atraso
+        }
+
+        func
