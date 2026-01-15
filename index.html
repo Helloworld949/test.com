@@ -3,95 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Motorola Rescue - Offline Mode</title>
+    <title>RSA Web - Version Control</title>
     <style>
-        :root { --blue: #0078d4; --bg: #f5f5f5; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        .window { background: white; width: 95%; max-width: 500px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; }
-        .header { background: var(--blue); color: white; padding: 15px; font-weight: bold; text-align: center; font-size: 14px; }
+        :root { --moto: #0078d4; }
+        body { font-family: sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .card { background: white; width: 90%; max-width: 450px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); overflow: hidden; }
+        .header { background: var(--moto); color: white; padding: 20px; font-weight: bold; text-align: center; }
         .content { padding: 30px; text-align: center; }
-        .btn { background: var(--blue); color: white; border: none; padding: 15px 35px; border-radius: 25px; font-size: 16px; cursor: pointer; width: 100%; font-weight: bold; }
-        .status { margin-top: 20px; font-size: 13px; color: #666; font-family: monospace; text-align: left; background: #eee; padding: 10px; border-radius: 5px; height: 80px; overflow-y: auto; }
-        .hidden { display: none; }
+        .btn { background: var(--moto); color: white; border: none; padding: 15px 30px; border-radius: 30px; font-weight: bold; width: 100%; cursor: pointer; }
+        
+        /* Rodapé de Controle */
+        .debug-footer { margin-top: 20px; padding: 15px; background: #e9ecef; width: 90%; max-width: 450px; border-radius: 8px; border: 1px dashed #adb5bd; }
+        .info-line { display: flex; justify-content: space-between; font-family: monospace; font-size: 11px; color: #495057; margin-bottom: 5px; }
+        .v-active { color: #d94111; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="window">
-    <div class="header">Rescue and Smart Assistant (RSA Web)</div>
+<div class="card">
+    <div class="header">MOTOROLA RESCUE ASSISTANT</div>
     <div class="content">
-        <div style="font-size: 50px; margin-bottom: 20px;">Ⓜ️</div>
-        <div id="ui-main">
-            <h3>Conectar Dispositivo</h3>
-            <p style="font-size: 14px; color: #666;">A biblioteca foi detectada localmente. O cabo de rede não afetará o funcionamento.</p>
-            <button class="btn" onclick="startConnection()">INICIAR RESGATE</button>
-        </div>
-        <div id="status" class="status">Aguardando comando...</div>
+        <div style="font-size: 40px; margin-bottom: 15px;">🚀</div>
+        <p style="font-size: 14px; color: #555;">Clique abaixo para testar a conexão USB com o driver embutido.</p>
+        <button class="btn" onclick="executarTeste()">TESTAR CONEXÃO</button>
+    </div>
+</div>
+
+<div class="debug-footer">
+    <div class="info-line">
+        <span>VERSÃO DO TESTE:</span>
+        <span class="v-active">v1.0.7</span> </div>
+    <div class="info-line">
+        <span>ÚLTIMO DEPLOY:</span>
+        <span>15/01/2026 - 16:00</span> </div>
+    <div class="info-line">
+        <span>STATUS ADB:</span>
+        <span id="adbStat">PRONTO (OFFLINE)</span>
     </div>
 </div>
 
 <script>
-/** * BIBLIOTECA ADB COMPLETA (MODO EMBUTIDO)
- * Este bloco substitui os arquivos externos que estavam travando.
- */
-const ADB_PROT = { CLASS: 255, SUBCLASS: 66, PROTOCOL: 1 };
-
-class FastAdb {
-    constructor() { this.dev = null; }
-    async connect() {
-        this.dev = await navigator.usb.requestDevice({ filters: [] });
-        await this.dev.open();
-        
-        let config = this.dev.configurations[0];
-        let ifaceNum = -1;
-
-        // Varre as interfaces para achar o ADB no driver composto
-        for (let i of config.interfaces) {
-            let alt = i.alternates[0];
-            if (alt.interfaceClass === ADB_PROT.CLASS && alt.interfaceSubclass === ADB_PROT.SUBCLASS) {
-                ifaceNum = i.interfaceNumber;
-                break;
-            }
-        }
-
-        if (ifaceNum === -1) throw new Error("Interface ADB não encontrada. Ative a Depuração USB.");
-
-        await this.dev.selectConfiguration(1);
-        await this.dev.claimInterface(ifaceNum);
-        return this.dev.productName;
-    }
-    async notify() {
-        // Envia sinal de notificação para o sistema Android do Motorola
-        return true;
-    }
-}
-
-const logger = document.getElementById('status');
-function log(msg) { logger.innerHTML += `> ${msg}<br>`; logger.scrollTop = logger.scrollHeight; }
-
-async function startConnection() {
-    const adb = new FastAdb();
-    try {
-        log("Iniciando motor ADB local...");
-        const name = await adb.connect();
-        log(`Conectado a: ${name}`);
-        log("Sincronizando barramento USB...");
-        
-        setTimeout(async () => {
-            log("Enviando comando RSA de reparo...");
-            await adb.notify();
-            log("SUCESSO: Resgate concluído.");
-            document.querySelector('h3').innerText = "Resgate Finalizado!";
-            document.querySelector('h3').style.color = "green";
-        }, 2000);
-        
-    } catch (e) {
-        log(`ERRO: ${e.message}`);
-        if(e.message.includes("Interface")) {
-            log("DICA: Desconecte e reconecte o cabo USB.");
+    // Código ADB simplificado e embutido para teste de versão
+    async function executarTeste() {
+        try {
+            const device = await navigator.usb.requestDevice({ filters: [] });
+            document.getElementById('adbStat').innerText = "CONECTADO: " + device.productName;
+            document.getElementById('adbStat').style.color = "green";
+        } catch (e) {
+            alert("Erro no teste v1.0.7: " + e.message);
         }
     }
-}
 </script>
 
 </body>
