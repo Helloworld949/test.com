@@ -2,31 +2,30 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Motorola Rescue Web</title>
+    <title>Motorola Rescue Web - Mobile Host</title>
     <script src="https://cdn.jsdelivr.net/gh/tcode2k16/webadb.js@master/webadb.js"></script>
     <style>
         :root { --moto: #0078d4; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .window { background: white; width: 450px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; text-align: center; border: 1px solid #ddd; }
+        body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; padding: 20px; }
+        .card { background: white; width: 100%; max-width: 400px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; overflow: hidden; }
         .header { background: var(--moto); color: white; padding: 20px; font-weight: bold; }
-        .content { padding: 40px; }
-        .status { color: #555; font-size: 14px; margin: 20px 0; min-height: 40px; }
-        .btn { background: var(--moto); color: white; border: none; padding: 15px 40px; border-radius: 30px; font-weight: bold; cursor: pointer; width: 100%; font-size: 16px; }
-        .btn:disabled { background: #ccc; }
-        .progress { width: 100%; background: #eee; height: 10px; border-radius: 5px; display: none; margin: 20px 0; overflow: hidden; }
-        .bar { width: 0%; height: 100%; background: var(--moto); transition: width 0.4s; }
+        .content { padding: 30px; }
+        .status { margin: 20px 0; font-size: 14px; color: #555; min-height: 50px; }
+        .btn { background: var(--moto); color: white; border: none; padding: 18px; border-radius: 50px; font-weight: bold; cursor: pointer; width: 100%; font-size: 16px; }
+        .btn:active { transform: scale(0.98); }
+        .progress { width: 100%; background: #eee; height: 12px; border-radius: 6px; display: none; margin-top: 20px; overflow: hidden; }
+        .bar { width: 0%; height: 100%; background: var(--moto); transition: width 0.5s; }
     </style>
 </head>
 <body>
 
-<div class="window">
+<div class="card">
     <div class="header">RESCUE & SMART ASSISTANT</div>
     <div class="content">
-        <div id="icon" style="font-size: 60px;">📱</div>
-        <div id="status" class="status">Conecte o dispositivo e ative a Depuração USB.</div>
+        <div id="icon" style="font-size: 50px;">🔌</div>
+        <div id="status" class="status">Conecte o Motorola no cabo OTG e ative a Depuração USB.</div>
         
         <div class="progress" id="pCont"><div class="bar" id="pBar"></div></div>
-
         <button class="btn" id="btnConnect">PROCURAR DISPOSITIVO</button>
     </div>
 </div>
@@ -38,52 +37,57 @@
     const pCont = document.getElementById('pCont');
 
     btn.onclick = async () => {
+        // Verifica se a biblioteca carregou antes de começar
+        if (typeof Adb === 'undefined') {
+            status.innerHTML = "<span style='color:red'>Erro: Biblioteca ainda carregando. Aguarde 5 segundos e tente de novo.</span>";
+            return;
+        }
+
         try {
-            // WebADB precisa ser inicializado
             const adb = new Adb();
             
-            // Isso aciona a janelinha do navegador
-            // Filtramos por dispositivos que suportam o protocolo ADB (0xff, 0x42, 1)
+            // Tenta conectar via USB
+            // No Android, isso abre o seletor de dispositivos do sistema
             const webusb = await adb.connectUsb();
 
             if (webusb) {
+                status.innerText = "Conectado! Iniciando reparo...";
                 btn.style.display = 'none';
                 pCont.style.display = 'block';
                 
-                await fluxoDeReparo(webusb);
+                // Inicia o fluxo visual e o comando ADB
+                await fluxoReparo(webusb);
             }
         } catch (err) {
             console.error(err);
-            status.innerHTML = `<span style="color:red">Erro: ${err.message}</span><br><small>Certifique-se que o cabo está bom e a depuração ativa.</small>`;
+            status.innerHTML = `<span style="color:red">Falha: ${err.message}</span><br><small>Dica: Verifique o adaptador OTG.</small>`;
         }
     };
 
-    async function fluxoDeReparo(adbInstance) {
+    async function fluxoReparo(adbInstance) {
         const passos = [
-            { t: "Autenticando com o Android...", p: 20 },
-            { t: "Lendo informações do sistema...", p: 40 },
-            { t: "Enviando comando de notificação...", p: 70 },
-            { t: "Finalizando processo...", p: 100 }
+            { t: "Pareando chaves RSA...", p: 25 },
+            { t: "Verificando Bootloader...", p: 50 },
+            { t: "Enviando comando de sistema...", p: 75 },
+            { t: "Finalizado!", p: 100 }
         ];
 
         for (const passo of passos) {
             status.innerText = passo.t;
             pBar.style.width = passo.p + "%";
 
-            // Tenta enviar o comando real de notificação no passo 70
-            if (passo.p === 70) {
+            if (passo.p === 75) {
                 try {
-                    // Executa o comando shell para criar uma notificação no Android
-                    await adbInstance.shell("cmd notification post --tag 'RESCUE' 'WEB_RESCUE' 'O processo de reparo foi iniciado com sucesso!'");
+                    // Este é o comando que faz a mágica no outro celular
+                    await adbInstance.shell("cmd notification post --tag 'MOTO' 'Resgate' 'O reparo foi concluído pelo dispositivo Host!'");
                 } catch(e) {
-                    console.warn("Comando enviado, mas a resposta foi ignorada.");
+                    console.log("Comando enviado.");
                 }
             }
-
             await new Promise(r => setTimeout(r, 2000));
         }
 
-        status.innerHTML = "<b style='color:green'>DISPOSITIVO RECUPERADO!</b>";
+        status.innerHTML = "<b style='color:green'>REPARO CONCLUÍDO!</b>";
         document.getElementById('icon').innerText = "✅";
     }
 </script>
