@@ -3,88 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>RSA Loader v1.2.2</title>
+    <title>RSA Mouse Edition - v1.2.3</title>
     <style>
-        /* Estilo do Carregador */
-        body { margin: 0; background: #121212; color: #fff; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
-        .loader-box { text-align: center; transition: opacity 0.5s; }
-        .btn-exe { background: #0078d4; color: white; border: none; padding: 25px 50px; border-radius: 5px; font-weight: bold; font-size: 1.2rem; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        
-        /* Estilo do Recovery Gerado */
-        #recovery-engine { 
-            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
-            background: #000; color: #33b5e5; font-family: 'Courier New', monospace; 
-            padding: 15px; box-sizing: border-box; font-size: 13px; z-index: 9999;
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background: #000; color: #fff; font-family: 'Courier New', Courier, monospace;
+            overflow: hidden; cursor: crosshair; /* Cursor customizado para o mouse */
         }
-        .yellow { color: #ffff00; }
-        .white { color: #ffffff; }
-        .highlight { background: #33b5e5; color: #000; padding: 0 2px; }
-        .progress-bar { width: 100%; height: 6px; background: #333; margin: 20px 0; border-radius: 10px; }
-        .progress-fill { width: 0%; height: 100%; background: #ccc; transition: width 0.2s; }
+
+        /* TELA DE BOOT (CLIQUE COM MOUSE) */
+        #boot-screen {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100%; background: #1a1a1a; font-family: sans-serif;
+        }
+        .mouse-btn {
+            background: #0078d4; color: white; border: 4px solid #fff; padding: 40px;
+            border-radius: 20px; font-weight: bold; font-size: 24px; cursor: pointer;
+            box-shadow: 0 0 20px rgba(0,120,212,0.6);
+        }
+
+        /* INTERFACE RECOVERY OPERADA POR MOUSE */
+        #recovery-ui {
+            display: none; width: 100%; height: 100%; padding: 20px; box-sizing: border-box;
+            font-size: 15px; line-height: 1.8;
+        }
+        .rec-blue { color: #33b5e5; }
+        .rec-yellow { color: #ffff00; }
+        
+        /* Itens do menu agora mudam de cor ao passar o mouse */
+        .menu-item { cursor: pointer; padding: 2px 10px; width: fit-content; }
+        .menu-item:hover { background: #33b5e5; color: #000; }
+        
+        .progress-box { width: 90%; background: #333; height: 12px; margin: 25px 0; border: 1px solid #777; }
+        .progress-bar { width: 0%; height: 100%; background: #0078d4; }
+        
+        #log-area { font-size: 12px; color: #aaa; margin-top: 10px; height: 100px; overflow: hidden; }
     </style>
 </head>
 <body>
 
-<div class="loader-box" id="loader">
-    <div style="font-size: 40px; margin-bottom: 20px;">⚙️</div>
-    <h2 style="margin-bottom: 30px;">RSA System Script</h2>
-    <button class="btn-exe" onclick="runRecovery()">EXECUTAR SCRIPT NO DISPOSITIVO</button>
-    <p style="color: #666; font-size: 12px; margin-top: 20px;">BUILD: v1.2.2 | ENGINE: Web-Display-Inject</p>
+<div id="boot-screen">
+    <div style="color: #fff; margin-bottom: 20px; font-size: 18px;">CONECTOR USB ATIVO</div>
+    <button class="mouse-btn" onclick="entrarNoRecovery()">CLIQUE PARA<br>INICIAR RESGATE</button>
+    <div style="margin-top: 30px; color: #555; font-size: 12px;">Build v1.2.3 - Mouse Interface Mode</div>
 </div>
 
-<div id="recovery-engine">
-    <div class="white">Android Recovery<br>motorola/cedric/cedric<br>10/QPBS30.61-21-3-7<br>user/release-keys</div>
-    <br>
-    <div class="yellow">Use keys to move highlight; enter to select.</div>
-    <br>
-    <div class="highlight">Reboot system now</div>
-    <div class="white">Reboot to bootloader</div>
-    <div class="white">Apply update from ADB</div>
-    <div class="white">Apply update from SD card</div>
-    <div class="white">Wipe data/factory reset</div>
-    <div class="white">Wipe cache partition</div>
-    <br><br>
-    <div id="console-logs" class="white">
-        -- Sincronizando com host...<br>
-        -- Iniciando leitura de pacotes...
+<div id="recovery-ui">
+    <div style="border-bottom: 1px solid #333; padding-bottom: 5px;">
+        Android Recovery<br>
+        motorola/cedric/cedric:10/QPBS30<br>
+        <span class="rec-blue">Mouse-Navigation-Enabled</span>
     </div>
-    <div class="progress-bar"><div class="progress-fill" id="bar"></div></div>
-    <div id="status-text" class="white" style="font-weight: bold;">Status: Aguardando firmware...</div>
+    <br>
+    <div class="rec-yellow">Clique nas opções abaixo com o ponteiro:</div>
+    <br>
+    <div class="menu-item" onclick="iniciarFlash()">Reboot system now</div>
+    <div class="menu-item" onclick="iniciarFlash()">Reboot to bootloader</div>
+    <div class="menu-item" onclick="iniciarFlash()">Apply update from ADB</div>
+    <div class="menu-item" onclick="iniciarFlash()" style="background: #33b5e5; color: #000;">Wipe data/factory reset</div>
+    <div class="menu-item" onclick="iniciarFlash()">Wipe cache partition</div>
+    <br>
+    
+    <div id="log-area">
+        -- Suporte a mouse detectado na porta USB...<br>
+        -- Aguardando seleção do usuário...
+    </div>
+
+    <div class="progress-box" id="p-box" style="display:none;">
+        <div class="progress-bar" id="p-bar"></div>
+    </div>
+    <div id="status-msg" class="rec-blue"></div>
 </div>
 
 <script>
-    function runRecovery() {
-        // 1. Forçar Tela Cheia (O "Leitor" precisa disso para sumir com o Chrome)
-        const elem = document.documentElement;
-        if (elem.requestFullscreen) { elem.requestFullscreen(); }
-        else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); }
+    function entrarNoRecovery() {
+        // Ativa tela cheia para sumir o navegador
+        const doc = document.documentElement;
+        if (doc.requestFullscreen) doc.requestFullscreen();
+        else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen();
 
-        // 2. Esconder o carregador e mostrar o Recovery Engine
-        document.getElementById('loader').style.display = 'none';
-        const engine = document.getElementById('recovery-engine');
-        engine.style.display = 'block';
+        document.getElementById('boot-screen').style.display = 'none';
+        document.getElementById('recovery-ui').style.display = 'block';
+    }
 
-        // 3. Executar o script de animação
-        let progress = 0;
-        const bar = document.getElementById('bar');
-        const logs = document.getElementById('console-logs');
-        const status = document.getElementById('status-text');
+    function iniciarFlash() {
+        const log = document.getElementById('log-area');
+        const pBox = document.getElementById('p-box');
+        const pBar = document.getElementById('p-bar');
+        const status = document.getElementById('status-msg');
 
-        const scriptAction = setInterval(() => {
-            progress += 1;
-            bar.style.width = progress + "%";
+        pBox.style.display = 'block';
+        log.innerHTML += "<br>-- Iniciando limpeza de dados via Mouse...";
+        
+        let p = 0;
+        const anim = setInterval(() => {
+            p += 1;
+            pBar.style.width = p + "%";
+            status.innerText = "Formatando partições: " + p + "%";
 
-            if (progress === 15) logs.innerHTML += "<br>-- Verifying current build... OK";
-            if (progress === 40) logs.innerHTML += "<br>-- Writing system image... [600MB]";
-            if (progress === 70) logs.innerHTML += "<br>-- Patching firmware unconditionally...";
-            if (progress === 95) logs.innerHTML += "<br>-- Installation complete.";
+            if (p === 30) log.innerHTML += "<br>-- Formatting /data...";
+            if (p === 60) log.innerHTML += "<br>-- Formatting /cache...";
+            if (p === 90) log.innerHTML += "<br>-- Wiping metadata...";
 
-            if (progress >= 100) {
-                clearInterval(scriptAction);
-                status.innerHTML = "DONE. Select reboot option.";
-                status.style.color = "#0f0";
+            if (p >= 100) {
+                clearInterval(anim);
+                status.innerHTML = "<span style='color:#0f0'>Data wipe complete.</span>";
+                log.innerHTML += "<br>-- Processo finalizado com sucesso.";
             }
-        }, 100);
+        }, 80);
     }
 </script>
 
