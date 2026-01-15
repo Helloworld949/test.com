@@ -3,114 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>RSA Mouse Edition - v1.2.3</title>
+    <title>RSA Dual-Mode v1.2.5</title>
     <style>
-        body, html { 
-            margin: 0; padding: 0; width: 100%; height: 100%; 
-            background: #000; color: #fff; font-family: 'Courier New', Courier, monospace;
-            overflow: hidden; cursor: crosshair; /* Cursor customizado para o mouse */
-        }
-
-        /* TELA DE BOOT (CLIQUE COM MOUSE) */
-        #boot-screen {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 100%; background: #1a1a1a; font-family: sans-serif;
-        }
-        .mouse-btn {
-            background: #0078d4; color: white; border: 4px solid #fff; padding: 40px;
-            border-radius: 20px; font-weight: bold; font-size: 24px; cursor: pointer;
-            box-shadow: 0 0 20px rgba(0,120,212,0.6);
-        }
-
-        /* INTERFACE RECOVERY OPERADA POR MOUSE */
-        #recovery-ui {
-            display: none; width: 100%; height: 100%; padding: 20px; box-sizing: border-box;
-            font-size: 15px; line-height: 1.8;
-        }
-        .rec-blue { color: #33b5e5; }
-        .rec-yellow { color: #ffff00; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: sans-serif; overflow: hidden; }
         
-        /* Itens do menu agora mudam de cor ao passar o mouse */
-        .menu-item { cursor: pointer; padding: 2px 10px; width: fit-content; }
-        .menu-item:hover { background: #33b5e5; color: #000; }
+        /* INTERFACE DO CONTROLADOR (AZUL) */
+        #host-ui { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: #f0f2f5; }
+        .card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; width: 85%; }
+        .btn-blue { background: #0078d4; color: white; border: none; padding: 15px; width: 100%; border-radius: 4px; font-weight: bold; margin-bottom: 10px; cursor: pointer; }
         
-        .progress-box { width: 90%; background: #333; height: 12px; margin: 25px 0; border: 1px solid #777; }
-        .progress-bar { width: 0%; height: 100%; background: #0078d4; }
-        
-        #log-area { font-size: 12px; color: #aaa; margin-top: 10px; height: 100px; overflow: hidden; }
+        /* INTERFACE DO MOTOROLA (RECOVERY PRETO) */
+        #recovery-ui { 
+            display: none; background: #000; color: #33b5e5; height: 100%; width: 100%; 
+            padding: 20px; box-sizing: border-box; font-family: 'Courier New', monospace; font-size: 13px;
+        }
+        .yellow { color: #ffff00; }
+        .highlight { background: #33b5e5; color: #000; }
+        .bar-bg { width: 100%; background: #333; height: 8px; margin-top: 20px; }
+        .bar-fill { width: 0%; height: 100%; background: #ccc; transition: width 0.2s; }
     </style>
 </head>
 <body>
 
-<div id="boot-screen">
-    <div style="color: #fff; margin-bottom: 20px; font-size: 18px;">CONECTOR USB ATIVO</div>
-    <button class="mouse-btn" onclick="entrarNoRecovery()">CLIQUE PARA<br>INICIAR RESGATE</button>
-    <div style="margin-top: 30px; color: #555; font-size: 12px;">Build v1.2.3 - Mouse Interface Mode</div>
+<div id="setup-screen" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: #fff;">
+    <h2>Configurar este aparelho como:</h2>
+    <button class="btn-blue" style="width: 250px;" onclick="setMode('host')">CONTROLADOR (Este celular)</button>
+    <button class="btn-blue" style="width: 250px; background: #333;" onclick="setMode('target')">MOTOROLA (Alvo do Resgate)</button>
+    <p style="font-size: 10px; color: #999;">v1.2.5 | RSA Dual-Sync</p>
+</div>
+
+<div id="host-ui" style="display: none;">
+    <div class="card">
+        <h3>Painel de Controle</h3>
+        <p>Clique abaixo para enviar a imagem de Recovery para o Motorola via USB.</p>
+        <button class="btn-blue" onclick="startRemoteFlash()">INICIAR RESGATE AGORA</button>
+        <div id="host-status" style="font-size: 12px; color: #666;">Aguardando comando...</div>
+    </div>
 </div>
 
 <div id="recovery-ui">
-    <div style="border-bottom: 1px solid #333; padding-bottom: 5px;">
-        Android Recovery<br>
-        motorola/cedric/cedric:10/QPBS30<br>
-        <span class="rec-blue">Mouse-Navigation-Enabled</span>
-    </div>
+    <div>Android Recovery<br>motorola/cedric/cedric<br>10/QPBS30.61-21-3-7</div>
     <br>
-    <div class="rec-yellow">Clique nas opções abaixo com o ponteiro:</div>
+    <div class="yellow">Modo de Resgate Ativo via USB...</div>
     <br>
-    <div class="menu-item" onclick="iniciarFlash()">Reboot system now</div>
-    <div class="menu-item" onclick="iniciarFlash()">Reboot to bootloader</div>
-    <div class="menu-item" onclick="iniciarFlash()">Apply update from ADB</div>
-    <div class="menu-item" onclick="iniciarFlash()" style="background: #33b5e5; color: #000;">Wipe data/factory reset</div>
-    <div class="menu-item" onclick="iniciarFlash()">Wipe cache partition</div>
-    <br>
-    
-    <div id="log-area">
-        -- Suporte a mouse detectado na porta USB...<br>
-        -- Aguardando seleção do usuário...
-    </div>
-
-    <div class="progress-box" id="p-box" style="display:none;">
-        <div class="progress-bar" id="p-bar"></div>
-    </div>
-    <div id="status-msg" class="rec-blue"></div>
+    <div class="highlight">Reboot system now</div>
+    <div>Wipe data/factory reset</div>
+    <br><br>
+    <div id="rec-log">-- Aguardando sinal do host...</div>
+    <div class="bar-bg"><div class="bar-fill" id="fill"></div></div>
+    <div id="rec-status" style="margin-top: 10px; color: #fff;">Status: Idle</div>
 </div>
 
 <script>
-    function entrarNoRecovery() {
-        // Ativa tela cheia para sumir o navegador
-        const doc = document.documentElement;
-        if (doc.requestFullscreen) doc.requestFullscreen();
-        else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen();
-
-        document.getElementById('boot-screen').style.display = 'none';
-        document.getElementById('recovery-ui').style.display = 'block';
+    function setMode(mode) {
+        document.getElementById('setup-screen').style.display = 'none';
+        if (mode === 'host') {
+            document.getElementById('host-ui').style.display = 'flex';
+        } else {
+            // Entra em tela cheia no Motorola
+            const doc = document.documentElement;
+            if (doc.requestFullscreen) doc.requestFullscreen();
+            document.getElementById('recovery-ui').style.display = 'block';
+        }
     }
 
-    function iniciarFlash() {
-        const log = document.getElementById('log-area');
-        const pBox = document.getElementById('p-box');
-        const pBar = document.getElementById('p-bar');
-        const status = document.getElementById('status-msg');
+    // No Host: Simula o envio
+    function startRemoteFlash() {
+        document.getElementById('host-status').innerHTML = "<b style='color:green'>A enviar dados para o Motorola...</b>";
+        alert("Comando enviado! Se o Motorola estiver no link, ele iniciará o Recovery visual.");
+        // Nota: Para sincronia real via internet, seria necessário um servidor (Socket.io).
+        // Aqui simulamos a ação local.
+    }
 
-        pBox.style.display = 'block';
-        log.innerHTML += "<br>-- Iniciando limpeza de dados via Mouse...";
-        
+    // No Motorola: Função para rodar a barra (pode ser disparada manualmente ou via link)
+    function simulateRecoveryAction() {
         let p = 0;
-        const anim = setInterval(() => {
-            p += 1;
-            pBar.style.width = p + "%";
-            status.innerText = "Formatando partições: " + p + "%";
-
-            if (p === 30) log.innerHTML += "<br>-- Formatting /data...";
-            if (p === 60) log.innerHTML += "<br>-- Formatting /cache...";
-            if (p === 90) log.innerHTML += "<br>-- Wiping metadata...";
-
-            if (p >= 100) {
-                clearInterval(anim);
-                status.innerHTML = "<span style='color:#0f0'>Data wipe complete.</span>";
-                log.innerHTML += "<br>-- Processo finalizado com sucesso.";
+        const fill = document.getElementById('fill');
+        const log = document.getElementById('rec-log');
+        const interval = setInterval(() => {
+            p++;
+            fill.style.width = p + "%";
+            if(p === 30) log.innerHTML += "<br>-- Writing system partition...";
+            if(p === 100) {
+                clearInterval(interval);
+                document.getElementById('rec-status').innerText = "Resgate Concluído.";
             }
-        }, 80);
+        }, 100);
     }
 </script>
 
