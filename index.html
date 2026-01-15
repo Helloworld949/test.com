@@ -2,93 +2,187 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Motorola Rescue Web - Mobile Host</title>
-    <script src="https://cdn.jsdelivr.net/gh/tcode2k16/webadb.js@master/webadb.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rescue and Smart Assistant - Web</title>
+    <script src="https://unpkg.com/webadb.js@1.1.0/webadb.js"></script>
     <style>
-        :root { --moto: #0078d4; }
-        body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; padding: 20px; }
-        .card { background: white; width: 100%; max-width: 400px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; overflow: hidden; }
-        .header { background: var(--moto); color: white; padding: 20px; font-weight: bold; }
-        .content { padding: 30px; }
-        .status { margin: 20px 0; font-size: 14px; color: #555; min-height: 50px; }
-        .btn { background: var(--moto); color: white; border: none; padding: 18px; border-radius: 50px; font-weight: bold; cursor: pointer; width: 100%; font-size: 16px; }
-        .btn:active { transform: scale(0.98); }
-        .progress { width: 100%; background: #eee; height: 12px; border-radius: 6px; display: none; margin-top: 20px; overflow: hidden; }
-        .bar { width: 0%; height: 100%; background: var(--moto); transition: width 0.5s; }
+        :root {
+            --moto-blue: #0078d4;
+            --moto-bg: #f3f3f3;
+            --moto-text: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--moto-bg);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .window {
+            background: white;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 4px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+
+        .header {
+            background: var(--moto-blue);
+            color: white;
+            padding: 15px 20px;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .content {
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .moto-logo {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: var(--moto-blue);
+        }
+
+        h2 {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: var(--moto-text);
+            font-weight: 400;
+        }
+
+        p {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        /* Botões estilo Motorola RSA */
+        .btn {
+            background-color: var(--moto-blue);
+            color: white;
+            border: none;
+            padding: 10px 40px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+            min-width: 150px;
+        }
+
+        .btn:hover {
+            background-color: #005a9e;
+        }
+
+        .btn:disabled {
+            background-color: #ccc;
+        }
+
+        /* Área de Status inferior */
+        .footer-status {
+            background: #f9f9f9;
+            padding: 15px 20px;
+            border-top: 1px solid #eee;
+            font-size: 12px;
+            color: #888;
+            display: flex;
+            gap: 15px;
+        }
+
+        .indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ddd;
+        }
+
+        .dot.online { background: #4caf50; }
+
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <div class="header">RESCUE & SMART ASSISTANT</div>
+<div class="window">
+    <div class="header">
+        <span>Rescue and Smart Assistant</span>
+        <span>X</span>
+    </div>
+
     <div class="content">
-        <div id="icon" style="font-size: 50px;">🔌</div>
-        <div id="status" class="status">Conecte o Motorola no cabo OTG e ative a Depuração USB.</div>
+        <div class="moto-logo">M</div>
         
-        <div class="progress" id="pCont"><div class="bar" id="pBar"></div></div>
-        <button class="btn" id="btnConnect">PROCURAR DISPOSITIVO</button>
+        <div id="step1">
+            <h2>Bem-vindo ao Resgate</h2>
+            <p>Para começar, precisamos preparar os drivers de comunicação do seu navegador Chrome.</p>
+            <button class="btn" onclick="prepareDriver()">INICIAR</button>
+        </div>
+
+        <div id="step2" class="hidden">
+            <h2>Conecte o Dispositivo</h2>
+            <p>Conecte seu dispositivo Motorola via cabo USB e certifique-se que a depuração USB está ativa.</p>
+            <button class="btn" id="btnUsb" onclick="connectDevice()">CONECTAR</button>
+        </div>
+
+        <div id="step3" class="hidden">
+            <h2 style="color: var(--moto-blue)">Dispositivo Pareado</h2>
+            <p>A sincronização com o software foi concluída com sucesso.</p>
+            <div style="font-size: 40px;">✔️</div>
+        </div>
+    </div>
+
+    <div class="footer-status">
+        <div class="indicator">
+            <div id="ind1" class="dot"></div> Driver Web
+        </div>
+        <div class="indicator">
+            <div id="ind2" class="dot"></div> USB Status
+        </div>
     </div>
 </div>
 
 <script>
-    const btn = document.getElementById('btnConnect');
-    const status = document.getElementById('status');
-    const pBar = document.getElementById('pBar');
-    const pCont = document.getElementById('pCont');
-
-    btn.onclick = async () => {
-        // Verifica se a biblioteca carregou antes de começar
-        if (typeof Adb === 'undefined') {
-            status.innerHTML = "<span style='color:red'>Erro: Biblioteca ainda carregando. Aguarde 5 segundos e tente de novo.</span>";
-            return;
+    function prepareDriver() {
+        if (typeof Adb !== 'undefined') {
+            document.getElementById('step1').classList.add('hidden');
+            document.getElementById('step2').classList.remove('hidden');
+            document.getElementById('ind1').classList.add('online');
+        } else {
+            alert("A biblioteca Motorola está sendo carregada. Aguarde...");
         }
+    }
 
+    async function connectDevice() {
         try {
             const adb = new Adb();
-            
-            // Tenta conectar via USB
-            // No Android, isso abre o seletor de dispositivos do sistema
             const webusb = await adb.connectUsb();
 
             if (webusb) {
-                status.innerText = "Conectado! Iniciando reparo...";
-                btn.style.display = 'none';
-                pCont.style.display = 'block';
-                
-                // Inicia o fluxo visual e o comando ADB
-                await fluxoReparo(webusb);
+                document.getElementById('step2').classList.add('hidden');
+                document.getElementById('step3').classList.remove('hidden');
+                document.getElementById('ind2').classList.add('online');
+
+                // Comando para confirmar no celular
+                await webusb.shell("cmd notification post --tag 'MOTO' 'RSA' 'Dispositivo pronto para resgate!'");
             }
         } catch (err) {
-            console.error(err);
-            status.innerHTML = `<span style="color:red">Falha: ${err.message}</span><br><small>Dica: Verifique o adaptador OTG.</small>`;
+            alert("Erro ao detectar dispositivo: " + err.message);
         }
-    };
-
-    async function fluxoReparo(adbInstance) {
-        const passos = [
-            { t: "Pareando chaves RSA...", p: 25 },
-            { t: "Verificando Bootloader...", p: 50 },
-            { t: "Enviando comando de sistema...", p: 75 },
-            { t: "Finalizado!", p: 100 }
-        ];
-
-        for (const passo of passos) {
-            status.innerText = passo.t;
-            pBar.style.width = passo.p + "%";
-
-            if (passo.p === 75) {
-                try {
-                    // Este é o comando que faz a mágica no outro celular
-                    await adbInstance.shell("cmd notification post --tag 'MOTO' 'Resgate' 'O reparo foi concluído pelo dispositivo Host!'");
-                } catch(e) {
-                    console.log("Comando enviado.");
-                }
-            }
-            await new Promise(r => setTimeout(r, 2000));
-        }
-
-        status.innerHTML = "<b style='color:green'>REPARO CONCLUÍDO!</b>";
-        document.getElementById('icon').innerText = "✅";
     }
 </script>
 
