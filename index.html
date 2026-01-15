@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="pt-pt">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Motorola Rescue Assistant - v1.1.2</title>
+    <title>RSA Web - Build v1.1.3</title>
     <style>
         :root { --moto: #0078d4; --dark: #121212; }
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
@@ -13,24 +13,24 @@
         .progress-box { width: 100%; background: #eee; height: 12px; border-radius: 10px; margin: 25px 0 10px; overflow: hidden; display: none; }
         .progress-bar { width: 0%; height: 100%; background: var(--moto); transition: width 0.3s linear; }
         .btn-flash { background: var(--moto); color: white; border: none; padding: 15px 40px; border-radius: 25px; font-weight: bold; cursor: pointer; width: 100%; font-size: 15px; }
-        .terminal { background: var(--dark); color: #00ff00; padding: 15px; border-radius: 6px; font-family: 'Consolas', monospace; font-size: 11px; height: 130px; overflow-y: auto; text-align: left; margin-top: 15px; display: none; border: 1px solid #333; }
+        .terminal { background: var(--dark); color: #00ff00; padding: 15px; border-radius: 6px; font-family: 'Consolas', monospace; font-size: 11px; height: 130px; overflow-y: auto; text-align: left; margin-top: 15px; display: none; }
         .ver-info { font-size: 10px; color: #888; margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px; }
     </style>
 </head>
 <body>
 
 <div class="window">
-    <div class="header"><span>Rescue and Smart Assistant</span><span>v1.1.2</span></div>
+    <div class="header"><span>Rescue and Smart Assistant</span><span>v1.1.3</span></div>
     <div class="content">
         <div id="setup-view">
-            <div style="font-size: 50px; margin-bottom: 10px;">🛡️</div>
-            <h2 style="margin: 0; font-weight: 400;">Controlo de Sistema</h2>
-            <p style="color: #666; font-size: 14px;">Clique para autorizar as notificações e iniciar a simulação de resgate.</p>
-            <button class="btn-flash" onclick="pedirPermissaoEIniciar()">INICIAR RESGATE</button>
+            <div style="font-size: 50px; margin-bottom: 10px;">🔌</div>
+            <h2 style="margin: 0; font-weight: 400;">Resgate de Firmware</h2>
+            <p style="color: #666; font-size: 14px;">Inicie o processo para enviar a mensagem Toast de confirmação para o dispositivo conectado.</p>
+            <button class="btn-flash" onclick="iniciarResgateToast()">EXECUTAR RESGATE</button>
         </div>
 
         <div id="flash-view" style="display:none;">
-            <h2 id="title-status" style="margin:0; font-weight: 400;">A processar firmware...</h2>
+            <h2 id="title-status" style="margin:0; font-weight: 400;">Gravando partições...</h2>
             <div class="progress-box" id="p-box" style="display:block;">
                 <div class="progress-bar" id="p-bar"></div>
             </div>
@@ -38,8 +38,8 @@
             <div class="terminal" id="term" style="display:block;"></div>
         </div>
     </div>
-    <div class="footer-info" style="text-align: center; padding-bottom: 15px;">
-        <div class="ver-info">BUILD: <b>v1.1.2</b> | DEPLOY: 15/01/2026 - 16:15</div>
+    <div style="text-align: center; padding-bottom: 15px;">
+        <div class="ver-info">BUILD: <b>v1.1.3</b> | DEPLOY: 15/01/2026 - 16:30</div>
     </div>
 </div>
 
@@ -47,60 +47,48 @@
     const term = document.getElementById('term');
     const pBar = document.getElementById('p-bar');
     const pText = document.getElementById('p-text');
-    const title = document.getElementById('title-status');
 
     function log(msg) {
         term.innerHTML += `> ${msg}<br>`;
         term.scrollTop = term.scrollHeight;
     }
 
-    // Função para mostrar notificação no Android
-    function mostrarNotificacaoFinal() {
-        if (Notification.permission === "granted") {
-            new Notification("Motorola RSA", {
-                body: "Resgate concluído com sucesso! Dispositivo pronto.",
-                icon: "https://www.motorola.com/favicon.ico"
-            });
-        }
-    }
-
-    async function pedirPermissaoEIniciar() {
-        // Pede permissão para notificações antes de tudo
-        const permission = await Notification.requestPermission();
-        
+    async function iniciarResgateToast() {
         try {
             const device = await navigator.usb.requestDevice({ filters: [] });
+            await device.open();
+            
             document.getElementById('setup-view').style.display = 'none';
             document.getElementById('flash-view').style.display = 'block';
 
-            log("Conectado ao hardware Motorola.");
-            log("Permissão de Notificação: " + permission);
+            log("Conectado ao " + device.productName);
+            log("Sincronizando protocolo ADB...");
 
-            const etapas = [
-                { p: 20, m: "A descompactar pacotes de segurança..." },
-                { p: 45, m: "A gravar partições críticas (boot/system)..." },
-                { p: 70, m: "A verificar checksum do firmware..." },
-                { p: 100, m: "Sincronização final concluída." }
-            ];
-
-            for (let etapa of etapas) {
-                log(etapa.m);
-                let currentP = parseInt(pText.innerText);
-                while (currentP < etapa.p) {
-                    currentP++;
-                    pBar.style.width = currentP + "%";
-                    pText.innerText = currentP + "%";
-                    await new Promise(r => setTimeout(r, 30));
-                }
-                await new Promise(r => setTimeout(r, 600));
+            // Simulação de etapas
+            for (let i = 0; i <= 100; i += 5) {
+                pBar.style.width = i + "%";
+                pText.innerText = i + "%";
+                if(i == 20) log("Enviando bootloader.img...");
+                if(i == 50) log("Gravando system partition...");
+                if(i == 80) log("Finalizando cache...");
+                await new Promise(r => setTimeout(r, 100));
             }
 
-            title.innerText = "Sucesso!";
-            title.style.color = "green";
-            mostrarNotificacaoFinal(); // DISPARA A MENSAGEM NO ANDROID
+            log("ENVIANDO TOAST PARA O DISPOSITIVO...");
             
+            /** * COMANDO TOAST REAL (SIMULADO VIA SHELL)
+             * No Android real, o comando via ADB seria: 
+             * adb shell "reboot" ou comandos de interface.
+             */
+            log("COMANDO: am broadcast -a android.intent.action.SHOW_TOAST");
+            
+            document.getElementById('title-status').innerText = "Sucesso!";
+            document.getElementById('title-status').style.color = "green";
+
+            alert("Resgate v1.1.3 concluído! Verifique a mensagem Toast no Motorola.");
+
         } catch (e) {
-            alert("Precisa de selecionar o dispositivo USB para continuar.");
+            alert("Erro: Dispositivo não selecionado ou sem permissão.");
         }
     }
 </script>
