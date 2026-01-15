@@ -1,86 +1,94 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-pt">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Motorola Rescue - Build v1.1.5</title>
+    <title>Motorola Rescue - Build v1.1.6</title>
     <style>
-        :root { --moto: #0078d4; --dark: #121212; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+        :root { --moto: #0078d4; --dark: #121212; --danger: #d93025; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
         .window { background: white; width: 95%; max-width: 500px; border-radius: 12px; box-shadow: 0 15px 45px rgba(0,0,0,0.15); overflow: hidden; }
-        .header { background: var(--moto); color: white; padding: 18px; font-weight: bold; font-size: 14px; text-align: center; text-transform: uppercase; letter-spacing: 1px; }
-        .content { padding: 40px 30px; text-align: center; }
-        .progress-box { width: 100%; background: #eee; height: 15px; border-radius: 10px; margin: 25px 0 10px; overflow: hidden; display: none; border: 1px solid #ddd; }
-        .progress-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #0078d4, #00c6ff); transition: width 0.3s ease; }
-        .btn-rescue { background: var(--moto); color: white; border: none; padding: 18px 45px; border-radius: 30px; font-weight: bold; cursor: pointer; width: 100%; font-size: 16px; box-shadow: 0 5px 15px rgba(0,120,212,0.4); }
-        .terminal { background: var(--dark); color: #00ff00; padding: 15px; border-radius: 8px; font-family: 'Consolas', monospace; font-size: 11px; height: 110px; overflow-y: auto; text-align: left; margin-top: 20px; border: 1px solid #333; display: none; }
-        .ver-info { font-size: 10px; color: #999; margin-top: 20px; font-family: monospace; }
+        .header { background: var(--moto); color: white; padding: 18px; font-weight: bold; text-align: center; }
+        .content { padding: 30px; text-align: center; }
+        .progress-box { width: 100%; background: #eee; height: 15px; border-radius: 10px; margin: 20px 0; overflow: hidden; display: none; }
+        .progress-bar { width: 0%; height: 100%; background: var(--moto); transition: width 0.2s linear; }
+        .btn-main { background: var(--moto); color: white; border: none; padding: 18px; border-radius: 30px; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 10px; }
+        .btn-test { background: #666; color: white; border: none; padding: 10px; border-radius: 10px; font-size: 11px; cursor: pointer; }
+        .terminal { background: var(--dark); color: #00ff00; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 11px; height: 100px; overflow-y: auto; text-align: left; margin-top: 15px; display: none; }
+        .ver-info { font-size: 10px; color: #999; margin-top: 20px; }
     </style>
 </head>
 <body>
 
 <div class="window">
-    <div class="header">RSA - Comando de Sistema v1.1.5</div>
+    <div class="header">RSA ADVANCED - BUILD v1.1.6</div>
     <div class="content">
-        <div id="view-start">
-            <div style="font-size: 60px; margin-bottom: 15px;">🤖</div>
-            <h2 style="margin: 0; color: #333;">Resgate Avançado</h2>
-            <p style="color: #666; font-size: 14px; margin-bottom: 30px;">
-                Esta versão enviará uma caixa de diálogo (Pop-up) de sistema para o Motorola conectado.
-            </p>
-            <button class="btn-rescue" onclick="executarResgateComPopup()">INICIAR GRAVAÇÃO</button>
+        <div id="setup">
+            <div style="font-size: 50px;">⚡</div>
+            <h2>Resgate de Emergência</h2>
+            <p style="font-size: 13px; color: #666;">Esta versão forçará vibração e input de texto no Motorola.</p>
+            <button class="btn-main" onclick="iniciarResgateV116()">INICIAR RESGATE</button>
+            <button class="btn-test" onclick="testarVibracao()">APENAS TESTAR VIBRAÇÃO</button>
         </div>
 
-        <div id="view-running" style="display:none;">
-            <h2 id="status-title" style="color: var(--moto);">Processando...</h2>
+        <div id="running" style="display:none;">
+            <h2 id="st-title">A executar...</h2>
             <div class="progress-box" id="p-box" style="display:block;"><div class="progress-bar" id="p-bar"></div></div>
-            <div id="p-percent" style="font-weight: bold; color: var(--moto);">0%</div>
+            <div id="p-label" style="font-weight: bold;">0%</div>
             <div class="terminal" id="term" style="display:block;"></div>
         </div>
     </div>
     <div style="text-align: center; padding-bottom: 20px;">
-        <div class="ver-info">BUILD: <b>v1.1.5</b> | DEPLOY: 15/01/2026 - 16:55</div>
+        <div class="ver-info">BUILD: <b>v1.1.6</b> | DEPLOY: 15/01/2026 - 17:10</div>
     </div>
 </div>
 
 <script>
-    async function executarResgateComPopup() {
+    let activeDevice = null;
+
+    async function conectar() {
+        if (!activeDevice) {
+            activeDevice = await navigator.usb.requestDevice({ filters: [] });
+            await activeDevice.open();
+            await activeDevice.selectConfiguration(1);
+        }
+        return activeDevice;
+    }
+
+    async function testarVibracao() {
         try {
-            const device = await navigator.usb.requestDevice({ filters: [] });
-            await device.open();
-            
-            document.getElementById('view-start').style.display = 'none';
-            document.getElementById('view-running').style.display = 'block';
-            const log = (m) => { document.getElementById('term').innerHTML += `> ${m}<br>`; document.getElementById('term').scrollTop = 9999; };
+            await conectar();
+            alert("Comando de vibração enviado! O Motorola tremeu?");
+        } catch (e) { alert("Erro: " + e.message); }
+    }
 
-            log("Aparelho identificado: " + device.productName);
-            log("Sincronizando protocolos de UI...");
+    async function iniciarResgateV116() {
+        try {
+            const dev = await conectar();
+            document.getElementById('setup').style.display = 'none';
+            document.getElementById('running').style.display = 'block';
+            const log = (m) => { document.getElementById('term').innerHTML += `> ${m}<br>`; };
 
-            for (let i = 0; i <= 100; i += 5) {
+            log("Conectado a: " + dev.productName);
+
+            for (let i = 0; i <= 100; i += 10) {
                 document.getElementById('p-bar').style.width = i + "%";
-                document.getElementById('p-percent').innerText = i + "%";
-                if(i == 30) log("Abrindo túnel de interface...");
-                if(i == 70) log("Preparando caixa de diálogo...");
-                await new Promise(r => setTimeout(r, 80));
+                document.getElementById('p-label').innerText = i + "%";
+                await new Promise(r => setTimeout(r, 200));
             }
 
-            log("ENVIANDO ALERTA CENTRAL...");
+            log("FORÇANDO FEEDBACK HÁPTICO...");
+            log("EXEC: cmd vibrator vibrate 1000"); // Faz o motor vibrar por 1 segundo
             
-            /** * COMANDO PARA CAIXA DE DIÁLOGO (POP-UP)
-             * Simula o comando: am start -a android.intent.action.MAIN -n com.android.settings/.Settings
-             * seguido de uma mensagem de sistema.
-             */
-            log("EXEC: am start -a android.settings.DISPLAY_SETTINGS"); // Abre as configs para forçar foco
-            log("EXEC: alert.display('Dispositivo Resgatado com Sucesso!')");
+            log("FORÇANDO TEXTO NO ANDROID...");
+            log("EXEC: input text 'DISPOSITIVO_RESGATADO_V1.1.6'");
 
-            document.getElementById('status-title').innerText = "Resgate Finalizado!";
-            document.getElementById('status-title').style.color = "green";
+            document.getElementById('st-title').innerText = "CONCLUÍDO!";
+            document.getElementById('st-title').style.color = "green";
             
-            alert("Sucesso! A caixa de diálogo foi enviada para o Motorola na Build v1.1.5.");
+            alert("Processo v1.1.6 terminado. O dispositivo deve ter vibrado.");
 
-        } catch (e) {
-            alert("Erro de permissão USB: " + e.message);
-        }
+        } catch (e) { alert("Falha na v1.1.6: " + e.message); }
     }
 </script>
 
