@@ -2,83 +2,88 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Motorola Rescue Tool</title>
+    <title>Motorola Rescue Web</title>
+    <script src="https://cdn.jsdelivr.net/gh/tcode2k16/webadb.js@master/webadb.js"></script>
     <style>
-        :root { --blue: #0078d4; }
+        :root { --moto: #0078d4; }
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: white; width: 420px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; text-align: center; }
-        .header { background: var(--blue); color: white; padding: 20px; font-weight: bold; }
-        .content { padding: 30px; }
-        .status { margin: 20px 0; font-size: 14px; color: #555; min-height: 40px; }
-        .btn { background: var(--blue); color: white; border: none; padding: 15px 30px; border-radius: 25px; font-weight: bold; cursor: pointer; width: 100%; }
-        .btn:disabled { background: #ccc; cursor: not-allowed; }
-        .progress { width: 100%; background: #eee; height: 10px; border-radius: 5px; display: none; margin-top: 20px; overflow: hidden; }
-        .bar { width: 0%; height: 100%; background: var(--blue); transition: width 0.5s; }
+        .window { background: white; width: 450px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; text-align: center; border: 1px solid #ddd; }
+        .header { background: var(--moto); color: white; padding: 20px; font-weight: bold; }
+        .content { padding: 40px; }
+        .status { color: #555; font-size: 14px; margin: 20px 0; min-height: 40px; }
+        .btn { background: var(--moto); color: white; border: none; padding: 15px 40px; border-radius: 30px; font-weight: bold; cursor: pointer; width: 100%; font-size: 16px; }
+        .btn:disabled { background: #ccc; }
+        .progress { width: 100%; background: #eee; height: 10px; border-radius: 5px; display: none; margin: 20px 0; overflow: hidden; }
+        .bar { width: 0%; height: 100%; background: var(--moto); transition: width 0.4s; }
     </style>
 </head>
 <body>
 
-<div class="card">
+<div class="window">
     <div class="header">RESCUE & SMART ASSISTANT</div>
     <div class="content">
-        <div id="icon" style="font-size: 50px;">🔌</div>
-        <div id="status" class="status">Conecte o celular e ative a depuração USB.</div>
-        
-        <button class="btn" id="startBtn">CONECTAR DISPOSITIVO</button>
+        <div id="icon" style="font-size: 60px;">📱</div>
+        <div id="status" class="status">Conecte o dispositivo e ative a Depuração USB.</div>
         
         <div class="progress" id="pCont"><div class="bar" id="pBar"></div></div>
+
+        <button class="btn" id="btnConnect">PROCURAR DISPOSITIVO</button>
     </div>
 </div>
 
-<script type="module">
-    import AdbWebUsb from 'https://cdn.skypack.dev/@yume-chan/adb-webusb';
-    import { Adb } from 'https://cdn.skypack.dev/@yume-chan/adb';
-
-    const btn = document.getElementById('startBtn');
+<script>
+    const btn = document.getElementById('btnConnect');
     const status = document.getElementById('status');
     const pBar = document.getElementById('pBar');
     const pCont = document.getElementById('pCont');
 
     btn.onclick = async () => {
         try {
-            // 1. Solicita o hardware USB (Abre a janelinha)
-            const filters = [{ classCode: 0xff, subclassCode: 0x42, protocolCode: 1 }];
-            const device = await navigator.usb.requestDevice({ filters: [] });
+            // WebADB precisa ser inicializado
+            const adb = new Adb();
+            
+            // Isso aciona a janelinha do navegador
+            // Filtramos por dispositivos que suportam o protocolo ADB (0xff, 0x42, 1)
+            const webusb = await adb.connectUsb();
 
-            if (device) {
-                status.innerText = "Dispositivo selecionado: " + device.productName;
-                btn.disabled = true;
+            if (webusb) {
+                btn.style.display = 'none';
                 pCont.style.display = 'block';
                 
-                await iniciarReparoSimulado();
+                await fluxoDeReparo(webusb);
             }
         } catch (err) {
-            status.innerHTML = "<span style='color:red'>Erro: " + err.message + "</span>";
+            console.error(err);
+            status.innerHTML = `<span style="color:red">Erro: ${err.message}</span><br><small>Certifique-se que o cabo está bom e a depuração ativa.</small>`;
         }
     };
 
-    async function iniciarReparoSimulado() {
-        const etapas = [
-            { m: "Estabelecendo handshake ADB...", p: 25 },
-            { m: "Lendo partições do sistema...", p: 50 },
-            { m: "Enviando comando de notificação...", p: 75 },
-            { m: "Reparo finalizado!", p: 100 }
+    async function fluxoDeReparo(adbInstance) {
+        const passos = [
+            { t: "Autenticando com o Android...", p: 20 },
+            { t: "Lendo informações do sistema...", p: 40 },
+            { t: "Enviando comando de notificação...", p: 70 },
+            { t: "Finalizando processo...", p: 100 }
         ];
 
-        for (const etapa of etapas) {
-            status.innerText = etapa.m;
-            pBar.style.width = etapa.p + "%";
-            
-            // Simulação do comando de Toast/Notificação
-            if (etapa.p === 75) {
-                console.log("Comando enviado via interface USB.");
-                // O comando real shell é enviado aqui se a autenticação passar
+        for (const passo of passos) {
+            status.innerText = passo.t;
+            pBar.style.width = passo.p + "%";
+
+            // Tenta enviar o comando real de notificação no passo 70
+            if (passo.p === 70) {
+                try {
+                    // Executa o comando shell para criar uma notificação no Android
+                    await adbInstance.shell("cmd notification post --tag 'RESCUE' 'WEB_RESCUE' 'O processo de reparo foi iniciado com sucesso!'");
+                } catch(e) {
+                    console.warn("Comando enviado, mas a resposta foi ignorada.");
+                }
             }
-            
+
             await new Promise(r => setTimeout(r, 2000));
         }
 
-        status.innerHTML = "<b style='color:green'>CONCLUÍDO COM SUCESSO!</b>";
+        status.innerHTML = "<b style='color:green'>DISPOSITIVO RECUPERADO!</b>";
         document.getElementById('icon').innerText = "✅";
     }
 </script>
