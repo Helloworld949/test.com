@@ -1,56 +1,106 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-pt">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RSA Web - Version Control</title>
+    <title>Motorola Rescue Assistant - v1.1.2</title>
     <style>
-        :root { --moto: #0078d4; }
-        body { font-family: sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        .card { background: white; width: 90%; max-width: 450px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); overflow: hidden; }
-        .header { background: var(--moto); color: white; padding: 20px; font-weight: bold; text-align: center; }
+        :root { --moto: #0078d4; --dark: #121212; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+        .window { background: white; width: 95%; max-width: 500px; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); overflow: hidden; }
+        .header { background: var(--moto); color: white; padding: 15px 20px; font-weight: bold; font-size: 13px; display: flex; justify-content: space-between; }
         .content { padding: 30px; text-align: center; }
-        .btn { background: var(--moto); color: white; border: none; padding: 15px 30px; border-radius: 30px; font-weight: bold; width: 100%; cursor: pointer; }
-        
-        /* Rodapé de Controle */
-        .debug-footer { margin-top: 20px; padding: 15px; background: #e9ecef; width: 90%; max-width: 450px; border-radius: 8px; border: 1px dashed #adb5bd; }
-        .info-line { display: flex; justify-content: space-between; font-family: monospace; font-size: 11px; color: #495057; margin-bottom: 5px; }
-        .v-active { color: #d94111; font-weight: bold; }
+        .progress-box { width: 100%; background: #eee; height: 12px; border-radius: 10px; margin: 25px 0 10px; overflow: hidden; display: none; }
+        .progress-bar { width: 0%; height: 100%; background: var(--moto); transition: width 0.3s linear; }
+        .btn-flash { background: var(--moto); color: white; border: none; padding: 15px 40px; border-radius: 25px; font-weight: bold; cursor: pointer; width: 100%; font-size: 15px; }
+        .terminal { background: var(--dark); color: #00ff00; padding: 15px; border-radius: 6px; font-family: 'Consolas', monospace; font-size: 11px; height: 130px; overflow-y: auto; text-align: left; margin-top: 15px; display: none; border: 1px solid #333; }
+        .ver-info { font-size: 10px; color: #888; margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <div class="header">MOTOROLA RESCUE ASSISTANT</div>
+<div class="window">
+    <div class="header"><span>Rescue and Smart Assistant</span><span>v1.1.2</span></div>
     <div class="content">
-        <div style="font-size: 40px; margin-bottom: 15px;">🚀</div>
-        <p style="font-size: 14px; color: #555;">Clique abaixo para testar a conexão USB com o driver embutido.</p>
-        <button class="btn" onclick="executarTeste()">TESTAR CONEXÃO</button>
-    </div>
-</div>
+        <div id="setup-view">
+            <div style="font-size: 50px; margin-bottom: 10px;">🛡️</div>
+            <h2 style="margin: 0; font-weight: 400;">Controlo de Sistema</h2>
+            <p style="color: #666; font-size: 14px;">Clique para autorizar as notificações e iniciar a simulação de resgate.</p>
+            <button class="btn-flash" onclick="pedirPermissaoEIniciar()">INICIAR RESGATE</button>
+        </div>
 
-<div class="debug-footer">
-    <div class="info-line">
-        <span>VERSÃO DO TESTE:</span>
-        <span class="v-active">v1.0.7</span> </div>
-    <div class="info-line">
-        <span>ÚLTIMO DEPLOY:</span>
-        <span>15/01/2026 - 16:00</span> </div>
-    <div class="info-line">
-        <span>STATUS ADB:</span>
-        <span id="adbStat">PRONTO (OFFLINE)</span>
+        <div id="flash-view" style="display:none;">
+            <h2 id="title-status" style="margin:0; font-weight: 400;">A processar firmware...</h2>
+            <div class="progress-box" id="p-box" style="display:block;">
+                <div class="progress-bar" id="p-bar"></div>
+            </div>
+            <div id="p-text" style="font-size: 12px; color: var(--moto); font-weight: bold;">0%</div>
+            <div class="terminal" id="term" style="display:block;"></div>
+        </div>
+    </div>
+    <div class="footer-info" style="text-align: center; padding-bottom: 15px;">
+        <div class="ver-info">BUILD: <b>v1.1.2</b> | DEPLOY: 15/01/2026 - 16:15</div>
     </div>
 </div>
 
 <script>
-    // Código ADB simplificado e embutido para teste de versão
-    async function executarTeste() {
+    const term = document.getElementById('term');
+    const pBar = document.getElementById('p-bar');
+    const pText = document.getElementById('p-text');
+    const title = document.getElementById('title-status');
+
+    function log(msg) {
+        term.innerHTML += `> ${msg}<br>`;
+        term.scrollTop = term.scrollHeight;
+    }
+
+    // Função para mostrar notificação no Android
+    function mostrarNotificacaoFinal() {
+        if (Notification.permission === "granted") {
+            new Notification("Motorola RSA", {
+                body: "Resgate concluído com sucesso! Dispositivo pronto.",
+                icon: "https://www.motorola.com/favicon.ico"
+            });
+        }
+    }
+
+    async function pedirPermissaoEIniciar() {
+        // Pede permissão para notificações antes de tudo
+        const permission = await Notification.requestPermission();
+        
         try {
             const device = await navigator.usb.requestDevice({ filters: [] });
-            document.getElementById('adbStat').innerText = "CONECTADO: " + device.productName;
-            document.getElementById('adbStat').style.color = "green";
+            document.getElementById('setup-view').style.display = 'none';
+            document.getElementById('flash-view').style.display = 'block';
+
+            log("Conectado ao hardware Motorola.");
+            log("Permissão de Notificação: " + permission);
+
+            const etapas = [
+                { p: 20, m: "A descompactar pacotes de segurança..." },
+                { p: 45, m: "A gravar partições críticas (boot/system)..." },
+                { p: 70, m: "A verificar checksum do firmware..." },
+                { p: 100, m: "Sincronização final concluída." }
+            ];
+
+            for (let etapa of etapas) {
+                log(etapa.m);
+                let currentP = parseInt(pText.innerText);
+                while (currentP < etapa.p) {
+                    currentP++;
+                    pBar.style.width = currentP + "%";
+                    pText.innerText = currentP + "%";
+                    await new Promise(r => setTimeout(r, 30));
+                }
+                await new Promise(r => setTimeout(r, 600));
+            }
+
+            title.innerText = "Sucesso!";
+            title.style.color = "green";
+            mostrarNotificacaoFinal(); // DISPARA A MENSAGEM NO ANDROID
+            
         } catch (e) {
-            alert("Erro no teste v1.0.7: " + e.message);
+            alert("Precisa de selecionar o dispositivo USB para continuar.");
         }
     }
 </script>
