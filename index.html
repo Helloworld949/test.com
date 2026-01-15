@@ -3,92 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>RSA Dual-Mode v1.2.5</title>
+    <title>Motorola RSA - Build v1.2.6</title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: sans-serif; overflow: hidden; }
+        /* Estilo para o Motorola (O alvo) */
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
         
-        /* INTERFACE DO CONTROLADOR (AZUL) */
-        #host-ui { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: #f0f2f5; }
-        .card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; width: 85%; }
-        .btn-blue { background: #0078d4; color: white; border: none; padding: 15px; width: 100%; border-radius: 4px; font-weight: bold; margin-bottom: 10px; cursor: pointer; }
-        
-        /* INTERFACE DO MOTOROLA (RECOVERY PRETO) */
-        #recovery-ui { 
-            display: none; background: #000; color: #33b5e5; height: 100%; width: 100%; 
-            padding: 20px; box-sizing: border-box; font-family: 'Courier New', monospace; font-size: 13px;
+        /* Interface de Setup (Visível apenas no início) */
+        #setup { 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100%; background: #f4f7f9; color: #333; font-family: sans-serif;
+        }
+        .big-btn { 
+            background: #0078d4; color: white; border: none; padding: 30px 60px;
+            border-radius: 10px; font-weight: bold; font-size: 20px; cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        /* Interface Recovery (O que o cliente vai ver) */
+        #recovery-view { 
+            display: none; width: 100%; height: 100%; padding: 25px; box-sizing: border-box;
+            color: #33b5e5; font-family: 'Courier New', monospace; font-size: 14px;
         }
         .yellow { color: #ffff00; }
-        .highlight { background: #33b5e5; color: #000; }
-        .bar-bg { width: 100%; background: #333; height: 8px; margin-top: 20px; }
-        .bar-fill { width: 0%; height: 100%; background: #ccc; transition: width 0.2s; }
+        .white { color: #ffffff; }
+        .sel { background: #33b5e5; color: #000; padding: 0 5px; }
+        
+        /* Barra de Progresso do Android */
+        .p-bar-bg { width: 100%; background: #333; height: 10px; margin: 30px 0; border-radius: 5px; }
+        .p-bar-fill { width: 0%; height: 100%; background: #ccc; transition: width 0.1s; }
     </style>
 </head>
 <body>
 
-<div id="setup-screen" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: #fff;">
-    <h2>Configurar este aparelho como:</h2>
-    <button class="btn-blue" style="width: 250px;" onclick="setMode('host')">CONTROLADOR (Este celular)</button>
-    <button class="btn-blue" style="width: 250px; background: #333;" onclick="setMode('target')">MOTOROLA (Alvo do Resgate)</button>
-    <p style="font-size: 10px; color: #999;">v1.2.5 | RSA Dual-Sync</p>
+<div id="setup">
+    <div style="font-size: 70px; margin-bottom: 20px;">🛡️</div>
+    <h2 style="margin-bottom: 40px;">RSA: MODO DE REPARAÇÃO</h2>
+    <button class="big-btn" onclick="iniciarRecoveryMotorola()">VINCULAR E INICIAR RESGATE</button>
+    <p style="margin-top: 30px; color: #888; font-size: 12px;">BUILD v1.2.6 | Sincronização USB via Mouse</p>
 </div>
 
-<div id="host-ui" style="display: none;">
-    <div class="card">
-        <h3>Painel de Controle</h3>
-        <p>Clique abaixo para enviar a imagem de Recovery para o Motorola via USB.</p>
-        <button class="btn-blue" onclick="startRemoteFlash()">INICIAR RESGATE AGORA</button>
-        <div id="host-status" style="font-size: 12px; color: #666;">Aguardando comando...</div>
-    </div>
-</div>
-
-<div id="recovery-ui">
-    <div>Android Recovery<br>motorola/cedric/cedric<br>10/QPBS30.61-21-3-7</div>
+<div id="recovery-view">
+    <div class="white">Android Recovery<br>motorola/cedric/cedric<br>10/QPBS30.61-21-3-7/release-keys</div>
     <br>
-    <div class="yellow">Modo de Resgate Ativo via USB...</div>
+    <div class="yellow">Use keys to move highlight; enter to select.</div>
     <br>
-    <div class="highlight">Reboot system now</div>
-    <div>Wipe data/factory reset</div>
+    <div class="sel">Reboot system now</div>
+    <div class="white">Reboot to bootloader</div>
+    <div class="white">Apply update from ADB</div>
+    <div class="white">Wipe data/factory reset</div>
+    <div class="white">Wipe cache partition</div>
     <br><br>
-    <div id="rec-log">-- Aguardando sinal do host...</div>
-    <div class="bar-bg"><div class="bar-fill" id="fill"></div></div>
-    <div id="rec-status" style="margin-top: 10px; color: #fff;">Status: Idle</div>
+    <div id="logs" class="white">
+        -- Sincronizando com Servidor RSA...<br>
+        -- Porta USB: Conectada via Adaptador.<br>
+        -- Verificando Permissões... OK.
+    </div>
+    
+    <div class="p-bar-bg"><div class="p-bar-fill" id="fill"></div></div>
+    <div id="status" class="white" style="font-weight: bold;">Status: A aguardar firmware...</div>
 </div>
 
 <script>
-    function setMode(mode) {
-        document.getElementById('setup-screen').style.display = 'none';
-        if (mode === 'host') {
-            document.getElementById('host-ui').style.display = 'flex';
-        } else {
-            // Entra em tela cheia no Motorola
-            const doc = document.documentElement;
-            if (doc.requestFullscreen) doc.requestFullscreen();
-            document.getElementById('recovery-ui').style.display = 'block';
-        }
-    }
+    function iniciarRecoveryMotorola() {
+        // 1. Força a tela cheia para sumir o Chrome
+        const doc = document.documentElement;
+        if (doc.requestFullscreen) doc.requestFullscreen();
+        else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen();
 
-    // No Host: Simula o envio
-    function startRemoteFlash() {
-        document.getElementById('host-status').innerHTML = "<b style='color:green'>A enviar dados para o Motorola...</b>";
-        alert("Comando enviado! Se o Motorola estiver no link, ele iniciará o Recovery visual.");
-        // Nota: Para sincronia real via internet, seria necessário um servidor (Socket.io).
-        // Aqui simulamos a ação local.
-    }
+        // 2. Troca para o visual Recovery
+        document.getElementById('setup').style.display = 'none';
+        document.getElementById('recovery-view').style.display = 'block';
 
-    // No Motorola: Função para rodar a barra (pode ser disparada manualmente ou via link)
-    function simulateRecoveryAction() {
+        // 3. Simula a "Recuperação" automática
         let p = 0;
         const fill = document.getElementById('fill');
-        const log = document.getElementById('rec-log');
-        const interval = setInterval(() => {
+        const logs = document.getElementById('logs');
+        const status = document.getElementById('status');
+
+        const tempo = setInterval(() => {
             p++;
             fill.style.width = p + "%";
-            if(p === 30) log.innerHTML += "<br>-- Writing system partition...";
-            if(p === 100) {
-                clearInterval(interval);
-                document.getElementById('rec-status').innerText = "Resgate Concluído.";
+            status.innerText = "Status: A instalar sistema... " + p + "%";
+
+            if (p === 25) logs.innerHTML += "<br>-- Patching system image unconditional...";
+            if (p === 60) logs.innerHTML += "<br>-- Verifying sparse system chunks...";
+            if (p === 85) logs.innerHTML += "<br>-- Finalizing post-install scripts...";
+
+            if (p >= 100) {
+                clearInterval(tempo);
+                status.innerHTML = "<span style='color:#0f0'>INSTALAÇÃO CONCLUÍDA COM SUCESSO.</span>";
+                logs.innerHTML += "<br>-- Agora pode reiniciar o dispositivo.";
             }
-        }, 100);
+        }, 150); // Ajuste a velocidade aqui (150ms por 1%)
     }
 </script>
 
