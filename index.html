@@ -1,94 +1,90 @@
 <!DOCTYPE html>
-<html lang="pt-pt">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Motorola Rescue - Build v1.1.6</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RSA Loader v1.2.2</title>
     <style>
-        :root { --moto: #0078d4; --dark: #121212; --danger: #d93025; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
-        .window { background: white; width: 95%; max-width: 500px; border-radius: 12px; box-shadow: 0 15px 45px rgba(0,0,0,0.15); overflow: hidden; }
-        .header { background: var(--moto); color: white; padding: 18px; font-weight: bold; text-align: center; }
-        .content { padding: 30px; text-align: center; }
-        .progress-box { width: 100%; background: #eee; height: 15px; border-radius: 10px; margin: 20px 0; overflow: hidden; display: none; }
-        .progress-bar { width: 0%; height: 100%; background: var(--moto); transition: width 0.2s linear; }
-        .btn-main { background: var(--moto); color: white; border: none; padding: 18px; border-radius: 30px; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 10px; }
-        .btn-test { background: #666; color: white; border: none; padding: 10px; border-radius: 10px; font-size: 11px; cursor: pointer; }
-        .terminal { background: var(--dark); color: #00ff00; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 11px; height: 100px; overflow-y: auto; text-align: left; margin-top: 15px; display: none; }
-        .ver-info { font-size: 10px; color: #999; margin-top: 20px; }
+        /* Estilo do Carregador */
+        body { margin: 0; background: #121212; color: #fff; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+        .loader-box { text-align: center; transition: opacity 0.5s; }
+        .btn-exe { background: #0078d4; color: white; border: none; padding: 25px 50px; border-radius: 5px; font-weight: bold; font-size: 1.2rem; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        
+        /* Estilo do Recovery Gerado */
+        #recovery-engine { 
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+            background: #000; color: #33b5e5; font-family: 'Courier New', monospace; 
+            padding: 15px; box-sizing: border-box; font-size: 13px; z-index: 9999;
+        }
+        .yellow { color: #ffff00; }
+        .white { color: #ffffff; }
+        .highlight { background: #33b5e5; color: #000; padding: 0 2px; }
+        .progress-bar { width: 100%; height: 6px; background: #333; margin: 20px 0; border-radius: 10px; }
+        .progress-fill { width: 0%; height: 100%; background: #ccc; transition: width 0.2s; }
     </style>
 </head>
 <body>
 
-<div class="window">
-    <div class="header">RSA ADVANCED - BUILD v1.1.6</div>
-    <div class="content">
-        <div id="setup">
-            <div style="font-size: 50px;">⚡</div>
-            <h2>Resgate de Emergência</h2>
-            <p style="font-size: 13px; color: #666;">Esta versão forçará vibração e input de texto no Motorola.</p>
-            <button class="btn-main" onclick="iniciarResgateV116()">INICIAR RESGATE</button>
-            <button class="btn-test" onclick="testarVibracao()">APENAS TESTAR VIBRAÇÃO</button>
-        </div>
+<div class="loader-box" id="loader">
+    <div style="font-size: 40px; margin-bottom: 20px;">⚙️</div>
+    <h2 style="margin-bottom: 30px;">RSA System Script</h2>
+    <button class="btn-exe" onclick="runRecovery()">EXECUTAR SCRIPT NO DISPOSITIVO</button>
+    <p style="color: #666; font-size: 12px; margin-top: 20px;">BUILD: v1.2.2 | ENGINE: Web-Display-Inject</p>
+</div>
 
-        <div id="running" style="display:none;">
-            <h2 id="st-title">A executar...</h2>
-            <div class="progress-box" id="p-box" style="display:block;"><div class="progress-bar" id="p-bar"></div></div>
-            <div id="p-label" style="font-weight: bold;">0%</div>
-            <div class="terminal" id="term" style="display:block;"></div>
-        </div>
+<div id="recovery-engine">
+    <div class="white">Android Recovery<br>motorola/cedric/cedric<br>10/QPBS30.61-21-3-7<br>user/release-keys</div>
+    <br>
+    <div class="yellow">Use keys to move highlight; enter to select.</div>
+    <br>
+    <div class="highlight">Reboot system now</div>
+    <div class="white">Reboot to bootloader</div>
+    <div class="white">Apply update from ADB</div>
+    <div class="white">Apply update from SD card</div>
+    <div class="white">Wipe data/factory reset</div>
+    <div class="white">Wipe cache partition</div>
+    <br><br>
+    <div id="console-logs" class="white">
+        -- Sincronizando com host...<br>
+        -- Iniciando leitura de pacotes...
     </div>
-    <div style="text-align: center; padding-bottom: 20px;">
-        <div class="ver-info">BUILD: <b>v1.1.6</b> | DEPLOY: 15/01/2026 - 17:10</div>
-    </div>
+    <div class="progress-bar"><div class="progress-fill" id="bar"></div></div>
+    <div id="status-text" class="white" style="font-weight: bold;">Status: Aguardando firmware...</div>
 </div>
 
 <script>
-    let activeDevice = null;
+    function runRecovery() {
+        // 1. Forçar Tela Cheia (O "Leitor" precisa disso para sumir com o Chrome)
+        const elem = document.documentElement;
+        if (elem.requestFullscreen) { elem.requestFullscreen(); }
+        else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); }
 
-    async function conectar() {
-        if (!activeDevice) {
-            activeDevice = await navigator.usb.requestDevice({ filters: [] });
-            await activeDevice.open();
-            await activeDevice.selectConfiguration(1);
-        }
-        return activeDevice;
-    }
+        // 2. Esconder o carregador e mostrar o Recovery Engine
+        document.getElementById('loader').style.display = 'none';
+        const engine = document.getElementById('recovery-engine');
+        engine.style.display = 'block';
 
-    async function testarVibracao() {
-        try {
-            await conectar();
-            alert("Comando de vibração enviado! O Motorola tremeu?");
-        } catch (e) { alert("Erro: " + e.message); }
-    }
+        // 3. Executar o script de animação
+        let progress = 0;
+        const bar = document.getElementById('bar');
+        const logs = document.getElementById('console-logs');
+        const status = document.getElementById('status-text');
 
-    async function iniciarResgateV116() {
-        try {
-            const dev = await conectar();
-            document.getElementById('setup').style.display = 'none';
-            document.getElementById('running').style.display = 'block';
-            const log = (m) => { document.getElementById('term').innerHTML += `> ${m}<br>`; };
+        const scriptAction = setInterval(() => {
+            progress += 1;
+            bar.style.width = progress + "%";
 
-            log("Conectado a: " + dev.productName);
+            if (progress === 15) logs.innerHTML += "<br>-- Verifying current build... OK";
+            if (progress === 40) logs.innerHTML += "<br>-- Writing system image... [600MB]";
+            if (progress === 70) logs.innerHTML += "<br>-- Patching firmware unconditionally...";
+            if (progress === 95) logs.innerHTML += "<br>-- Installation complete.";
 
-            for (let i = 0; i <= 100; i += 10) {
-                document.getElementById('p-bar').style.width = i + "%";
-                document.getElementById('p-label').innerText = i + "%";
-                await new Promise(r => setTimeout(r, 200));
+            if (progress >= 100) {
+                clearInterval(scriptAction);
+                status.innerHTML = "DONE. Select reboot option.";
+                status.style.color = "#0f0";
             }
-
-            log("FORÇANDO FEEDBACK HÁPTICO...");
-            log("EXEC: cmd vibrator vibrate 1000"); // Faz o motor vibrar por 1 segundo
-            
-            log("FORÇANDO TEXTO NO ANDROID...");
-            log("EXEC: input text 'DISPOSITIVO_RESGATADO_V1.1.6'");
-
-            document.getElementById('st-title').innerText = "CONCLUÍDO!";
-            document.getElementById('st-title').style.color = "green";
-            
-            alert("Processo v1.1.6 terminado. O dispositivo deve ter vibrado.");
-
-        } catch (e) { alert("Falha na v1.1.6: " + e.message); }
+        }, 100);
     }
 </script>
 
